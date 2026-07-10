@@ -41,7 +41,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
           {{- if not .Values.discovery.global }}
-          {{- range .Values.discovery.namespaces | default list("$(POD_NAMESPACE)")}}
+          {{- range .Values.discovery.namespaces | default (list "$(POD_NAMESPACE)") }}
             - "--namespace"
             - {{ . | quote }}
           {{- end }}
