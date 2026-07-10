@@ -3,11 +3,13 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -18,20 +20,23 @@ type DiscoveredService struct {
 }
 
 type ApiServerSettings struct {
-	ValidPorts []string `json:"validPorts"`
+	ValidPorts  []string `json:"validPorts"`
+	CheckHealth bool     `json:"checkHealth"`
 }
 
 type ApiServer struct {
+	ctx        context.Context
 	client     client.Client
 	isReadyPtr *bool
 	log        logr.Logger
 	settings   ApiServerSettings
 }
 
-func NewApiServer(c client.Client, settings ApiServerSettings, isReady *bool) *ApiServer {
+func NewApiServer(ctx context.Context, c client.Client, settings ApiServerSettings, isReady *bool) *ApiServer {
 	serverLog := ctrl.Log.WithName("api")
 
 	return &ApiServer{
+		ctx:        ctx,
 		client:     c,
 		isReadyPtr: isReady,
 		log:        serverLog,
@@ -50,7 +55,7 @@ func (s *ApiServer) Handler() http.Handler {
 func (s *ApiServer) handleListServices(w http.ResponseWriter, r *http.Request) {
 	var serviceList corev1.ServiceList
 
-	err := s.client.List(context.Background(), &serviceList)
+	err := s.client.List(s.ctx, &serviceList)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -60,6 +65,18 @@ func (s *ApiServer) handleListServices(w http.ResponseWriter, r *http.Request) {
 	for _, svc := range serviceList.Items {
 		if len(s.settings.ValidPorts) > 0 && !s.matchPorts(svc.Spec.Ports) {
 			continue
+		}
+
+		if s.settings.CheckHealth {
+			isHealthy, err := s.isHealthy(&svc)
+
+			if err != nil {
+				s.log.Error(err, "Failed to check service health", "service", svc.Name)
+			}
+
+			if !isHealthy {
+				continue
+			}
 		}
 
 		var ips []string
@@ -94,6 +111,32 @@ func (s *ApiServer) matchPorts(svcPorts []corev1.ServicePort) bool {
 		}
 	}
 	return false
+}
+
+func (s *ApiServer) isHealthy(svc *corev1.Service) (bool, error) {
+	sliceList := &discoveryv1.EndpointSliceList{}
+
+	listOpts := []client.ListOption{
+		client.InNamespace(svc.Namespace),
+		client.MatchingLabels{"kubernetes.io/service-name": svc.Name},
+	}
+
+	if err := s.client.List(s.ctx, sliceList, listOpts...); err != nil {
+		return false, fmt.Errorf("failed to list endpoint slices: %w", err)
+	}
+
+	for _, slice := range sliceList.Items {
+		for _, endpoint := range slice.Endpoints {
+			if endpoint.Conditions.Ready != nil && *endpoint.Conditions.Ready {
+				if endpoint.Conditions.Terminating != nil && *endpoint.Conditions.Terminating {
+					continue
+				}
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func (s *ApiServer) handleHealthz(w http.ResponseWriter, r *http.Request) {

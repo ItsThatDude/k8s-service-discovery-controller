@@ -14,3 +14,13 @@ rules:
   - get
   - list
   - watch
+{{- if .Values.discovery.healthCheck }}
+- apiGroups:
+  - "discovery.k8s.io"
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+  - watch
+{{- end }}

@@ -4,6 +4,7 @@ discovery:
   namespaces: []
   validPorts: []
   labelSelector: "sd.antware.xyz/discover=true"
+  healthCheck: true
 
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1

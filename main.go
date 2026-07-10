@@ -44,9 +44,11 @@ func main() {
 	var watchNamespaces watchNamespaceFlags
 	var labelSelectorStr string
 	var validPorts validPortFlags
+	var checkHealth bool
 	flag.Var(&watchNamespaces, "namespace", "The namespace to watch (can repeat)")
 	flag.StringVar(&labelSelectorStr, "selector", "", "Label selector string (e.g. app=frontend)")
 	flag.Var(&validPorts, "port", "Port number or port name to filter by (can repeat)")
+	flag.BoolVar(&checkHealth, "healthCheck", false, "Specify to filter out services with no endpoints")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
@@ -92,13 +94,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	settings := api.ApiServerSettings{
-		ValidPorts: validPorts,
-	}
 	var cacheSynced bool
-	apiServer := api.NewApiServer(cluster.GetClient(), settings, &cacheSynced)
-
 	ctx := ctrl.SetupSignalHandler()
+	apiServer := api.NewApiServer(
+		ctx,
+		cluster.GetClient(),
+		api.ApiServerSettings{
+			ValidPorts:  validPorts,
+			CheckHealth: checkHealth,
+		},
+		&cacheSynced,
+	)
 
 	go func() {
 		if err := cluster.Start(ctx); err != nil {

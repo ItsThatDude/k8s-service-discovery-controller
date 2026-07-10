@@ -54,6 +54,9 @@ spec:
             - "--selector"
             - {{ .Values.discovery.labelSelector | quote }}
           {{- end }}
+          {{- if .Values.discovery.healthCheck }}
+            - "--healthCheck"
+          {{- end }}
           env:
             - name: POD_NAMESPACE
               valueFrom:
