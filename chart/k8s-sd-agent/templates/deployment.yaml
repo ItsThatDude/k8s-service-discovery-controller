@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "k8s-sd-controller.fullname" . }}
+  name: {{ include "k8s-sd-agent.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "k8s-sd-controller.labels" . | nindent 4 }}
+    {{- include "k8s-sd-agent.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "k8s-sd-controller.selectorLabels" . | nindent 6 }}
+      {{- include "k8s-sd-agent.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -17,7 +17,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "k8s-sd-controller.labels" . | nindent 8 }}
+        {{- include "k8s-sd-agent.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -26,7 +26,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "k8s-sd-controller.serviceAccountName" . }}
+      serviceAccountName: {{ include "k8s-sd-agent.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}

@@ -1,5 +1,5 @@
 {{- if .Values.httpRoute.enabled -}}
-{{- $fullName := include "k8s-sd-controller.fullname" . -}}
+{{- $fullName := include "k8s-sd-agent.fullname" . -}}
 {{- $svcPort := .Values.service.port -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -7,7 +7,7 @@ metadata:
   name: {{ $fullName }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "k8s-sd-controller.labels" . | nindent 4 }}
+    {{- include "k8s-sd-agent.labels" . | nindent 4 }}
   {{- with .Values.httpRoute.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

@@ -1,10 +1,10 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "k8s-sd-controller.fullname" . }}
+  name: {{ include "k8s-sd-agent.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "k8s-sd-controller.labels" . | nindent 4 }}
+    {{- include "k8s-sd-agent.labels" . | nindent 4 }}
 rules:
 - apiGroups:
   - ""

@@ -1,15 +1,15 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "k8s-sd-controller.fullname" . }}
+  name: {{ include "k8s-sd-agent.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "k8s-sd-controller.labels" . | nindent 4 }}
+    {{- include "k8s-sd-agent.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ include "k8s-sd-controller.fullname" . }}
+  name: {{ include "k8s-sd-agent.fullname" . }}
 subjects:
 - kind: ServiceAccount
-  name: {{ include "k8s-sd-controller.serviceAccountName" . }}
+  name: {{ include "k8s-sd-agent.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
