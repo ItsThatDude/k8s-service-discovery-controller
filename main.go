@@ -25,7 +25,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Spin up a cluster handle to configure the shared cache engine
 	cluster, err := cluster.New(ctrl.GetConfigOrDie(), func(o *cluster.Options) {
 		o.Scheme = scheme
 		o.Cache = cache.Options{
@@ -38,19 +37,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Construct the API layer using the cluster's high-performance cache client
 	apiServer := api.NewApiServer(cluster.GetClient())
 
 	ctx := ctrl.SetupSignalHandler()
 
-	// Spin up the cache informer loops in the background
 	go func() {
 		if err := cluster.Start(ctx); err != nil {
 			os.Exit(1)
 		}
 	}()
 
-	// Blocks and waits for the cache handshake to finish so traffic isn't served empty lists
 	if cluster.GetCache().WaitForCacheSync(ctx) {
 		_ = http.ListenAndServe(":8080", apiServer.Handler())
 	}
